@@ -1,0 +1,196 @@
+config {
+  type: "view",
+  description: "エクスポートされた Google アナリティクス 4 プロパティのデータ。ワイルドカード テーブル analytics_<property_id>.events_* に対するビューとして定義される。このビューに対してクエリを実行する際は、最適化のため WHERE 句で wildcard_table_suffix によるフィルタリングを行うことを推奨とする。",
+  /**
+   * カラムの説明文
+   * 参考: "BigQuery Export のスキーマ - アナリティクス ヘルプ" https://support.google.com/analytics/answer/7029846?hl=ja
+   */
+  columns: {
+    event_date: "イベントが記録された日付（アプリの登録タイムゾーンにおける日付）。DATE 型に変換済み。",
+    event_timestamp: "該当クライアントでイベントが記録された時刻（マイクロ秒単位、UTC）。TIMESTAMP 型に変換済み",
+    event_name: "イベントの名前。",
+    event_params: {
+      description: "このイベントに関連付けられたパラメータを格納する繰り返しレコード。",
+      columns: {
+        key: "イベント パラメータのキー。",
+        value: {
+          description: "イベント パラメータの値を格納するレコード。",
+          columns: {
+            string_value: "イベント パラメータの文字列値。",
+            int_value: "イベント パラメータの整数値。",
+            float_value: "イベント パラメータの浮動小数点値。このフィールドは現在使用されていません。",
+            double_value: "イベント パラメータの倍精度値。"
+          }
+        }
+      }
+    },
+    event_previous_timestamp: "該当クライアントで前回イベントが記録された時刻（マイクロ秒単位、UTC）。TIMESTAMP 型に変換済み。",
+    event_value_in_usd: "イベントの「値」パラメータの通貨換算値（米ドル単位）。",
+    event_bundle_sequence_id: "これらのイベントをアップロードしたバンドルのシーケンシャル ID。",
+    event_server_timestamp_offset: "データの収集時とアップロード時のタイムスタンプの間隔（マイクロ秒単位）。",
+    user_id: "setUserId API によって設定されるユーザー ID。",
+    user_pseudo_id: "ユーザーの仮の ID（アプリ インスタンス ID など）。",
+    user_properties: {
+      description: "setUserProperty API によって設定される、ユーザー プロパティの繰り返しレコード。",
+      columns: {
+        key: "ユーザー プロパティの名前。",
+        value: {
+          description: "ユーザー プロパティの値を格納するレコード。",
+          columns: {
+            string_value: "ユーザー プロパティの文字列値。",
+            int_value: "ユーザー プロパティの整数値。",
+            float_value: "このフィールドは現在使用されていません。",
+            double_value: "ユーザー プロパティの倍精度値。",
+            set_timestamp_micros: "ユーザー プロパティが最後に設定された時刻（マイクロ秒単位）。"
+          }
+        }
+      }
+    },
+    user_first_touch_timestamp: "ユーザーが初めてアプリを起動したか、サイトに訪れた時刻（マイクロ秒単位）。TIMESTAMP 型に変換済み。",
+    user_ltv: {
+      description: "ユーザーのライフタイム バリューに関する情報を格納するレコード。このフィールドは当日表では使用されません。",
+      columns: {
+        revenue: "ユーザーのライフタイム バリュー（収益）。このフィールドは当日表では使用されません。",
+        currency: "ユーザーのライフタイム バリュー（通貨）。このフィールドは当日表では使用されません。"
+      }
+    },
+    device: {
+      description: "デバイスの情報を格納するレコード。",
+      columns: {
+        category: "デバイスのカテゴリ（モバイル、タブレット、PC）。",
+        mobile_brand_name: "デバイスのブランド名。",
+        mobile_model_name: "デバイスのモデル名。",
+        mobile_marketing_name: "デバイスのマーケティング名。",
+        mobile_os_hardware_model: "オペレーティング システムから直接取得したデバイスのモデル情報。",
+        operating_system: "デバイスのオペレーティング システム。",
+        operating_system_version: "OS のバージョン。",
+        vendor_id: "IDFV（IDFA を収集していない場合にのみ使用）。",
+        advertising_id: "広告 ID または IDFA。",
+        language: "OS の言語。",
+        is_limited_ad_tracking: "デバイスの広告トラッキング制限の設定。\niOS14 以降では、IDFA がゼロ以外の場合、false が返されます。",
+        time_zone_offset_seconds: "GMT との時差（秒単位）。",
+        browser: "",
+        browser_version: "",
+        web_info: {
+          description: "ウェブデータの情報のレコード。",
+          columns: {
+            browser: "ユーザーがコンテンツを閲覧したブラウザ。",
+            browser_version: "ユーザーがコンテンツを閲覧したブラウザのバージョン。",
+            hostname: "ログに記録されたイベントに関連付けられたホスト名。"
+          }
+        }
+      }
+    },
+    geo: {
+      description: "ユーザーの位置情報を格納するレコード。",
+      columns: {
+        continent: "イベントが報告された大陸（IP アドレスベース）。",
+        country: "イベントが報告された国（IP アドレスベース）。",
+        region: "イベントが報告された地域（IP アドレスベース）。",
+        city: "イベントが報告された都市（IP アドレスベース）。",
+        sub_continent: "イベントが報告された亜大陸（IP アドレスベース）。",
+        metro: "イベントが報告された大都市圏（IP アドレスベース）。"
+      }
+    },
+    app_info: {
+      description: "アプリについての情報を格納するレコード。",
+      columns: {
+        id: "アプリのパッケージ名またはバンドル ID。",
+        version: "アプリの versionName（Android の場合）または short bundle version。",
+        firebase_app_id: "アプリに関連付けられている Firebase アプリ ID。",
+        install_source: "アプリをインストールしたストア。"
+      }
+    },
+    traffic_source: {
+      description: "ユーザーを最初に獲得したトラフィック ソースの名前。このフィールドは当日表では使用されません。",
+      columns: {
+        name: "ユーザーを最初に獲得したマーケティング キャンペーンの名前。このフィールドは当日表では使用されません。",
+        medium: "ユーザーを最初に獲得したメディアの名前（有料検索、オーガニック検索、メールなど）。このフィールドは当日表では使用されません。",
+        source: "ユーザーを最初に獲得したネットワークの名前。このフィールドは当日表では使用されません。"
+      }
+    },
+    stream_id: "ストリームの数値 ID。",
+    platform: "アプリケーションが構築されているプラットフォーム。",
+    event_dimensions: {
+      description: "",
+      columns: {
+        hostname: ""
+      }
+    },
+    ecommerce: {
+      description: "e コマースに関する情報を格納するレコード。",
+      columns: {
+        total_item_quantity: "このイベントにおけるアイテムの合計数。items.quantity の合計です。",
+        purchase_revenue_in_usd: "このイベントでの購入による収益。米ドル（標準単位）で表記されます。購入イベントに対してのみ入力されます。",
+        purchase_revenue: "このイベントでの購入による収益。現地通貨（標準単位）で表記されます。購入イベントに対してのみ入力されます。",
+        refund_value_in_usd: "このイベントにおける払い戻しの金額。米ドル（標準単位）で表記されます。払い戻しイベントに対してのみ入力されます。",
+        refund_value: "このイベントにおける払い戻しの金額。現地通貨（標準単位）で表記されます。払い戻しイベントに対してのみ入力されます。",
+        shipping_value_in_usd: "このイベントにおける送料。米ドル（標準単位）で表記されます。",
+        shipping_value: "このイベントにおける送料。現地通貨で表記されます。",
+        tax_value_in_usd: "このイベントにおける税額。米ドル（標準単位）で表記されます。",
+        tax_value: "このイベントにおける税額。現地通貨（標準単位）で表記されます。",
+        unique_items: "このイベントにおける固有のアイテム数。item_id、item_name、item_brand に基づきます。",
+        transaction_id: "e コマース トランザクションのトランザクション ID。"
+      }
+    },
+    items: {
+      description: "このイベントに含まれる商品アイテムの繰り返しレコード。",
+      columns: {
+        item_id: "商品アイテムの ID。",
+        item_name: "商品アイテムの名前。",
+        item_brand: "商品アイテムのブランド。",
+        item_variant: "商品アイテムのバリエーション。",
+        item_category: "商品アイテムのカテゴリ。",
+        item_category2: "商品アイテムのサブカテゴリ。",
+        item_category3: "商品アイテムのサブカテゴリ。",
+        item_category4: "商品アイテムのサブカテゴリ。",
+        item_category5: "商品アイテムのサブカテゴリ。",
+        price_in_usd: "商品アイテムの価格。米ドル（標準単位）で表記されます。",
+        price: "商品アイテムの現地通貨での価格。",
+        quantity: "商品アイテムの数量。",
+        item_revenue_in_usd: "この商品アイテムの収益。price_in_usd x 数量によって計算されます。購入イベントに対してのみ入力され、米ドル（標準単位）で表記されます。",
+        item_revenue: "この商品アイテムの収益。価格 x 数量によって計算されます。購入イベントに対してのみ入力され、現地通貨（標準単位）で表記されます。",
+        item_refund_in_usd: "この商品アイテムの払い戻し額。price_in_usd x 数量によって計算されます。払い戻しイベントに対してのみ入力され、米ドル（標準単位）で表記されます。",
+        item_refund: "この商品アイテムの払い戻し額。価格 x 数量によって計算されます。払い戻しイベントに対してのみ入力され、現地通貨（標準単位）で表記されます。",
+        coupon: "この商品アイテムに適用されるクーポンコード。",
+        affiliation: "仕入れ先業者や実店舗を指定する商品アフィリエーション。",
+        location_id: "商品アイテムに関連付けられている場所。",
+        item_list_id: "ユーザーに商品アイテムが表示されたリストの ID。",
+        item_list_name: "ユーザーに商品アイテムが表示されたリストの名前。",
+        item_list_index: "リスト内の商品アイテムの位置",
+        promotion_id: "商品プロモーションの ID。",
+        promotion_name: "商品プロモーションの名前。",
+        creative_name: "プロモーション スポットで使用されたクリエイティブの名前。",
+        creative_slot: "クリエイティブ スロットの名前。"
+      }
+    },
+    table_suffix: "ワイルドカードテーブルでマッチした元テーブルの接尾辞。yyyymmdd 形式の日付文字列。このフィールドで絞り込むとクエリ処理量が削減される。"
+  }
+}
+
+SELECT
+  PARSE_DATE('%Y%m%d', CAST(event_date AS STRING)) AS event_date,
+  TIMESTAMP_MICROS(event_timestamp) AS event_timestamp,
+  event_name,
+  event_params,
+  TIMESTAMP_MICROS(event_previous_timestamp) AS event_previous_timestamp,
+  event_value_in_usd,
+  event_bundle_sequence_id,
+  event_server_timestamp_offset,
+  user_id,
+  user_pseudo_id,
+  user_properties,
+  TIMESTAMP_MICROS(user_first_touch_timestamp) AS user_first_touch_timestamp,
+  user_ltv,
+  device,
+  geo,
+  app_info,
+  traffic_source,
+  stream_id,
+  platform,
+  event_dimensions,
+  ecommerce,
+  items,
+  _TABLE_SUFFIX AS wildcard_table_suffix
+FROM
+  ${ref("events_*")}

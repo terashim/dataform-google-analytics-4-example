@@ -1,0 +1,22 @@
+config {
+  type: "view",
+  description: "Google アナリティクスの日次トラフィックレポート",
+  columns: {
+    date: "日付",
+    users: "ユーザー",
+    sessions: "セッション",
+    pageviews: "ページビュー"
+  }
+}
+
+SELECT
+  event_date AS date,
+  COUNT(DISTINCT user_pseudo_id) AS users,
+  COUNT(DISTINCT ga_session_id) AS sessions,
+  COUNT(*) AS pageviews
+FROM
+  ${ref("dwh__google_analytics_pageview_events")}
+GROUP BY
+  event_date
+ORDER BY
+  event_date

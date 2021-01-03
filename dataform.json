@@ -1,0 +1,6 @@
+{
+    "warehouse": "bigquery",
+    "defaultSchema": "YOUR-BIGQUERY-DATASET-ID",
+    "assertionSchema": "dataform_assertions",
+    "defaultDatabase": "YOUR-BIGQUERY-PROJECT-ID"
+}

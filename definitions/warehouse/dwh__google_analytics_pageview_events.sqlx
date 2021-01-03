@@ -1,0 +1,93 @@
+config {
+  // 更新処理の最適化のためインクリメンタルなデータセットとする
+  type: "incremental",
+  // 後のクエリ最適化に利用するためパーティショニングを設定する
+  bigquery: {
+    partitionBy: "event_date"
+  },
+  // データの重複を防ぐためユニークキーを指定する
+  uniqueKey: [
+    "event_timestamp",
+    "event_name",
+    "user_id",
+    "user_pseudo_id"
+  ],
+  // テーブルの説明文
+  description: "Google アナリティクスのページビューイベント",
+  // フィールドの説明文
+  columns: {
+    event_date: "イベントが記録された日付（アプリの登録タイムゾーンにおける日付）。",
+    event_timestamp: "該当クライアントでイベントが記録された時刻（マイクロ秒単位、UTC）。",
+    event_name: "イベントの名前。",
+    user_id: "setUserId API によって設定されるユーザー ID。",
+    user_pseudo_id: "ユーザーの仮の ID（アプリ インスタンス ID など）。",
+    ga_session_id: "セッションID",
+    page_location: "ページURL",
+    page_title: "ページタイトル",
+    page_referrer: "リファラー",
+    traffic_source: "ユーザーを最初に獲得したマーケティング キャンペーンの名前。このフィールドは当日表では使用されません。",
+    source: "ユーザーを最初に獲得したメディアの名前（有料検索、オーガニック検索、メールなど）。このフィールドは当日表では使用されません。",
+    medium: "ユーザーを最初に獲得したネットワークの名前。このフィールドは当日表では使用されません。",
+    device_category: "デバイスのカテゴリ（モバイル、タブレット、PC）。",
+    mobile_device_branding: "デバイスのブランド名。",
+    mobile_device_model: "デバイスのモデル名。",
+    mobile_device_marketing_name: "デバイスのマーケティング名。",
+    mobile_device_info: "オペレーティング システムから直接取得したデバイスのモデル情報。",
+    operating_system: "デバイスのオペレーティング システム。",
+    operating_system_version: "OS のバージョン。",
+    browser: "ユーザーがコンテンツを閲覧したブラウザ。",
+    browser_version: "ユーザーがコンテンツを閲覧したブラウザのバージョン。",
+    language: "OS の言語。",
+    continent: "イベントが報告された大陸（IP アドレスベース）。",
+    sub_continent: "イベントが報告された亜大陸（IP アドレスベース）。",
+    country: "イベントが報告された国（IP アドレスベース）。",
+    region: "イベントが報告された地域（IP アドレスベース）。",
+    city: "イベントが報告された都市（IP アドレスベース）。",
+    metro: "イベントが報告された大都市圏（IP アドレスベース）。"
+  }
+}
+
+-- クエリ最適化を有効にするため BigQuery スクリプトを利用する
+pre_operations {
+  DECLARE max_event_date DEFAULT (
+    ${when(incremental(),
+    `SELECT FORMAT_DATE("%Y%m%d", MAX(event_date)) FROM ${self()}`,
+    `"20000101"`)}
+  )
+}
+
+-- 全イベントを含むソーステーブルからページビューイベントのみ抽出し、データを整形するクエリ
+SELECT
+  event_date,
+  event_timestamp,
+  event_name,
+  user_id,
+  user_pseudo_id,
+  (SELECT value.int_value FROM UNNEST(event_params) WHERE key = 'ga_session_id') AS ga_session_id,
+  (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'page_location') AS page_location,
+  (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'page_title') AS page_title,
+  (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'page_referrer') AS page_referrer,
+  traffic_source.name AS traffic_source,
+  traffic_source.source AS source,
+  traffic_source.medium AS medium,
+  device.category AS device_category,
+  device.mobile_brand_name AS mobile_device_branding,
+  device.mobile_model_name AS mobile_device_model,
+  device.mobile_marketing_name AS mobile_device_marketing_name,
+  device.mobile_os_hardware_model AS mobile_device_info,
+  device.operating_system AS operating_system,
+  device.operating_system_version AS operating_system_version,
+  device.web_info.browser AS browser,
+  device.web_info.browser_version AS browser_version,
+  device.language AS language,
+  geo.continent AS continent,
+  geo.sub_continent AS sub_continent,
+  geo.country AS country,
+  geo.region AS region,
+  geo.city AS city,
+  geo.metro AS metro
+FROM
+  ${ref("stg__google_analytics_events")}
+WHERE
+  event_name = 'page_view'
+  AND wildcard_table_suffix >= max_event_date -- クエリ最適化のためワイルドカードで選択されるテーブルのフィルタリングを行う
