@@ -1,9 +1,12 @@
 config {
   // 更新処理の最適化のためインクリメンタルなデータセットとする
   type: "incremental",
-  // 後のクエリ最適化に利用するためパーティショニングを設定する
+  // BigQuery 固有の設定
   bigquery: {
-    partitionBy: "event_date"
+    // このテーブルに対するクエリの最適化に利用するためパーティショニングを設定する
+    partitionBy: "event_date",
+    // 更新対象のパーティションを絞り込むための条件を指定する
+    updatePartitionFilter: "event_date >= max_event_date"
   },
   // データの重複を防ぐためユニークキーを指定する
   uniqueKey: [
@@ -47,13 +50,13 @@ config {
   }
 }
 
--- クエリ最適化を有効にするため BigQuery スクリプトを利用する
 pre_operations {
+  -- クエリ最適化を有効にするため BigQuery スクリプトを利用する
   DECLARE max_event_date DEFAULT (
     ${when(incremental(),
-    `SELECT FORMAT_DATE("%Y%m%d", MAX(event_date)) FROM ${self()}`,
-    `"20000101"`)}
-  )
+    `SELECT MAX(event_date) FROM ${self()}`,
+    `DATE("2000-01-01")`)}
+  );
 }
 
 -- 全イベントを含むソーステーブルからページビューイベントのみ抽出し、データを整形するクエリ
@@ -89,5 +92,7 @@ SELECT
 FROM
   ${ref("stg__google_analytics_events")}
 WHERE
+  -- ページビューイベントのみを抽出する
   event_name = 'page_view'
-  AND wildcard_table_suffix >= max_event_date -- クエリ最適化のためワイルドカードで選択されるテーブルのフィルタリングを行う
+  -- データ抽出クエリ最適化のためワイルドカードで選択されるテーブルのフィルタリングを行う
+  AND wildcard_table_suffix >= FORMAT_DATE("%Y%m%d", max_event_date)
