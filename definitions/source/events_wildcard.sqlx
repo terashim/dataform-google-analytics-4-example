@@ -1,10 +1,10 @@
 config {
   type: "declaration",
-  /** 環境ごとの defaultDatabase 設定によって変化しないようにするため、ここでプロジェクトIDを指定する */
+  /** 本番環境／テスト環境の defaultDatabase 設定を上書きしてプロジェクトIDを固定する */
   database: constants.GA4_EXPORT_PROJECT_ID,
-  /** 環境ごとの defaultSchema 設定によって変化しないようにするため、ここでデータセットIDを指定する */
+  /** 本番環境／テスト環境の defaultSchema 設定を上書きしてデータセットIDを固定する */
   schema: "analytics_" + constants.GA4_PROPERTY_ID,
-  /** テーブル名にワイルドカードテーブルを指定 */
+  /** テーブル名にワイルドカードテーブルを指定する */
   name: "events_*",
   /** 説明文 */
   description: "Google Analytics 4 からエクスポートされたテーブルすべてを表すワイルドカードテーブル",

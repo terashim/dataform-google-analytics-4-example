@@ -5,7 +5,7 @@ config {
   bigquery: {
     // このテーブルに対するクエリの最適化に利用するためパーティショニングを設定する
     partitionBy: "event_date",
-    // 更新対象のパーティションを絞り込むための条件を指定する
+    // 既存データと差分データの重複を判定するためにスキャンされるパーティションを絞り込む条件を指定する
     updatePartitionFilter: "event_date >= max_event_date"
   },
   // データの重複を防ぐためユニークキーを指定する
@@ -51,10 +51,10 @@ config {
 }
 
 pre_operations {
-  -- クエリ最適化を有効にするため BigQuery スクリプトを利用する
+  -- 差分データの日付範囲を決定するため, 既存データの最新日付を取得する
   DECLARE max_event_date DEFAULT (
     ${when(incremental(),
-    `SELECT MAX(event_date) FROM ${self()}`,
+    `SELECT IFNULL(MAX(event_date), DATE("2000-01-01")) FROM ${self()}`,
     `DATE("2000-01-01")`)}
   );
 }
@@ -64,8 +64,8 @@ SELECT
   event_date,
   event_timestamp,
   event_name,
-  user_id,
-  user_pseudo_id,
+  IFNULL(user_id, '') AS user_id,
+  IFNULL(user_pseudo_id, '') AS user_pseudo_id,
   (SELECT value.int_value FROM UNNEST(event_params) WHERE key = 'ga_session_id') AS ga_session_id,
   (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'page_location') AS page_location,
   (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'page_title') AS page_title,
@@ -92,7 +92,8 @@ SELECT
 FROM
   ${ref("stg__google_analytics_events")}
 WHERE
+  event_timestamp IS NOT NULL
   -- ページビューイベントのみを抽出する
-  event_name = 'page_view'
-  -- データ抽出クエリ最適化のためワイルドカードで選択されるテーブルのフィルタリングを行う
+  AND event_name = 'page_view'
+  -- 差分データのサイズを抑えるため, 日付範囲を限定する
   AND wildcard_table_suffix >= FORMAT_DATE("%Y%m%d", max_event_date)
